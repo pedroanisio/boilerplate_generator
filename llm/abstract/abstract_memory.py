@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Optional, Union
 
 
-class Memory(ABC):
+class AbstractMemory(ABC):
     """
     Abstract base class for memory management.
     Provides the interface for storing and retrieving user-assistant interactions.

@@ -1,30 +1,29 @@
-## path : memory/long_term_memory.py
-from typing import List, Dict
-from memory.abstract_memory import AbstractMemory
+from typing import List, Dict, Optional, Union
+from llm.abstract.abstract_memory import AbstractMemory
 
 class LongTermMemory(AbstractMemory):
-    """
-    Long-term memory implementation.
-    Stores interactions persistently.
-    """
-
     def __init__(self):
-        self.memory = []
+        self.storage = []  # Similar structure to ShortTermMemory
 
-    def add_interaction(self, user_message: str, assistant_response: str) -> None:
-        """
-        Add an interaction to long-term memory.
-        """
-        self.memory.append({"user": user_message, "assistant": assistant_response})
+    def add_interaction(
+        self, 
+        user_message: str, 
+        assistant_response: str, 
+        metadata: Optional[Dict[str, Union[str, int, float]]] = None
+    ) -> None:
+        user_entry = {"role": "user", "content": user_message, "metadata": metadata}
+        assistant_entry = {"role": "assistant", "content": assistant_response, "metadata": metadata}
+        self.storage.extend([user_entry, assistant_entry])
 
-    def retrieve(self) -> List[Dict[str, str]]:
-        """
-        Retrieve all stored interactions in long-term memory.
-        """
-        return self.memory
+    def retrieve(
+        self, role: Optional[str] = None, limit: Optional[int] = None
+    ) -> List[Dict[str, Union[str, Dict]]]:
+        filtered = self.storage
+        if role:
+            filtered = [m for m in filtered if m["role"] == role]
+        if limit:
+            filtered = filtered[-limit:]
+        return filtered
 
     def clear(self) -> None:
-        """
-        Clear the long-term memory.
-        """
-        self.memory = []
+        self.storage.clear()

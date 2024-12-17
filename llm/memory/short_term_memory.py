@@ -1,17 +1,10 @@
-## path : llm/memory/short_term_memory.py
 from typing import List, Dict, Optional, Union
-from llm.abstract.memory import Memory
+from llm.abstract.abstract_memory import AbstractMemory
 
-
-class ShortTermMemory(Memory):
-    """
-    Short-term memory implementation.
-    Stores recent interactions up to a specified maximum length.
-    """
-
+class ShortTermMemory(AbstractMemory):
     def __init__(self, max_length: int = 5):
         self.max_length = max_length
-        self.memory = []  # Store interactions as a list of dictionaries
+        self.memory = []  # list of {"role": "user"/"assistant", "content": str, "metadata": dict}
 
     def add_interaction(
         self, 
@@ -19,32 +12,23 @@ class ShortTermMemory(Memory):
         assistant_response: str, 
         metadata: Optional[Dict[str, Union[str, int, float]]] = None
     ) -> None:
-        """
-        Add a user-assistant interaction to short-term memory.
-        """
-        interaction = [
-            {"role": "user", "content": user_message, "metadata": metadata},
-            {"role": "assistant", "content": assistant_response, "metadata": metadata},
-        ]
-        self.memory.extend(interaction)
+        user_entry = {"role": "user", "content": user_message, "metadata": metadata}
+        assistant_entry = {"role": "assistant", "content": assistant_response, "metadata": metadata}
+        self.memory.extend([user_entry, assistant_entry])
+
+        # Truncate if necessary
         if len(self.memory) > self.max_length:
-            self.memory = self.memory[-self.max_length:]  # Retain only the most recent entries
+            self.memory = self.memory[-self.max_length:]
 
     def retrieve(
         self, role: Optional[str] = None, limit: Optional[int] = None
     ) -> List[Dict[str, Union[str, Dict]]]:
-        """
-        Retrieve memory contents with optional role filtering and limit.
-        """
-        filtered_memory = self.memory
+        filtered = self.memory
         if role:
-            filtered_memory = [entry for entry in self.memory if entry["role"] == role]
+            filtered = [m for m in filtered if m["role"] == role]
         if limit:
-            filtered_memory = filtered_memory[-limit:]
-        return filtered_memory
+            filtered = filtered[-limit:]
+        return filtered
 
     def clear(self) -> None:
-        """
-        Clear the short-term memory.
-        """
-        self.memory = []
+        self.memory.clear()

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict
 
-class AbstractMessageLoader(ABC):
+class MessageLoader(ABC):
     
     @abstractmethod
     def load_system_message(self, file_path: str) -> str:
