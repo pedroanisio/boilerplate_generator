@@ -2,6 +2,7 @@ import os
 import subprocess
 from pathlib import Path
 import sys
+from helper import Project
 
 def check_dependency(tool):
     """Check if a required tool is installed."""
@@ -26,8 +27,7 @@ def run_command(command, description):
     print(f"Running: {description}")
     result = subprocess.run(command, shell=True, text=True)
     if result.returncode != 0:
-        print(f"Error: {description} failed.")
-        exit(result.returncode)
+        raise RuntimeError(f"Command failed: {description}")
     print(f"Success: {description} completed.\n")
 
 
@@ -99,15 +99,33 @@ def initialize_git(project_name):
 
 
 def setup_python_backend(project_name):
-    """Set up the Python backend with Django."""
-    backend_path = f"{project_name}/backend"
+    """Set up the Python backend with Django and PostgreSQL."""
+    # Create a Path object for the root project directory
+    root_path = Path(project_name)
+    root_path.mkdir(parents=True, exist_ok=True)  # Create if it doesn't exist
+
+    # Create the backend directory
+    backend_path = root_path / "backend"
+    backend_path.mkdir(parents=True, exist_ok=True)
+
+    # Now you can reliably use `root_path` and `backend_path` as Path objects
+    # For example:
+    # (backend_path / "some_file.txt").write_text("Hello, backend!")
+    
+    # Generate project-specific details
+    db_name = Project.generate_random_project_name()
+    db_user = Project.generate_db_username()
+    db_password = Project.generate_random_password()
+
+    staging_host = f"{project_name}-{db_name}.stage.internal"    
+
     run_command(f"cd {backend_path} && pipenv install django", "Install Django")
     run_command(
         f"cd {backend_path} && django-admin startproject app .", "Create Django project"
     )
     run_command(
-        f"cd {backend_path} && pipenv install pylint mypy pytest pytest-cov alembic",
-        "Install dev tools and migration tool",
+        f"cd {backend_path} && pipenv install pylint mypy pytest pytest-cov alembic psycopg2 dj-database-url",
+        "Install dev tools, migration tool, PostgreSQL adapter, and database URL utility",
     )
     run_command(
         f"cd {backend_path} && pipenv lock > Pipfile.lock && pipenv requirements > requirements.txt",
@@ -121,19 +139,57 @@ def setup_python_backend(project_name):
         f"cd {backend_path} && echo '[tool.black]\nline-length = 79' > pyproject.toml",
         "Configure Black code formatter",
     )
-    env_file_content = """DEBUG=True
+
+    # Define environment variables
+    env_file_content = f"""DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
-SECRET_KEY=your-secret-key
+SECRET_KEY={Project.generate_random_password()}
+DATABASE_URL=postgres://{db_user}:{db_password}@db:5432/{db_name}
 """
     with open(f"{backend_path}/.env", "w") as f:
         f.write(env_file_content)
     with open(f"{backend_path}/.env.staging", "w") as f:
-        f.write("DEBUG=False\nALLOWED_HOSTS=staging.domain.com")
+      f.write(f"DEBUG=False\nALLOWED_HOSTS={staging_host}\nDATABASE_URL=postgres://{db_user}:{db_password}@db:5432/{db_name}")
     with open(f"{backend_path}/.env.production", "w") as f:
-        f.write("DEBUG=False\nALLOWED_HOSTS=domain.com")
+        f.write(f"DEBUG=False\nALLOWED_HOSTS=domain.com\nDATABASE_URL=postgres://{db_user}:{db_password}@db:5432/{db_name}")
+
+    # Update Django settings for PostgreSQL
+    settings_path = f"{backend_path}/app/settings.py"
+    with open(settings_path, "r") as f:
+        settings = f.read()
+    
+    database_config = """
+import os
+import dj_database_url
+
+DATABASES = {
+    'default': dj_database_url.config(
+        default=os.getenv('DATABASE_URL', 'sqlite:///db.sqlite3')
+    )
+}
+"""
+    settings = settings.replace(
+        "DATABASES = {",
+        database_config
+    )
+    with open(settings_path, "w") as f:
+        f.write(settings)
+
+    # Initialize Alembic for migrations
     run_command(
         f"cd {backend_path} && alembic init migrations", "Initialize Alembic migrations"
     )
+
+    # Output database credentials for reference
+    print(f"Database Credentials for {project_name}:")
+    print(f"  Database Name: {db_name}")
+    print(f"  Username: {db_user}")
+    print(f"  Password: {db_password}\n")
+    print(f"  Staging Host: {staging_host}\n")
+
+    # Suggest adding to /etc/hosts
+    print("Add the following line to your /etc/hosts file for testing:")
+    print(f"127.0.0.1    {staging_host}\n")
 
 
 def setup_node_frontend(project_name):
