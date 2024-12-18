@@ -1,6 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
 
+
 class BaseHandler(ABC):
     def __init__(self):
         self.next_handler = None

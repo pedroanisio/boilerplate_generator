@@ -1,8 +1,8 @@
+from .base_handler import BaseHandler
+from jinja2 import Template
 from pathlib import Path
 from rich.panel import Panel
-from jinja2 import Template
-from .base_handler import BaseHandler
-from utils.commands import run_command
+from utils.helpers import run_command
 
 
 class FrontendSetupHandler(BaseHandler):

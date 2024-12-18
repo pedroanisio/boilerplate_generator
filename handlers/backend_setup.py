@@ -1,11 +1,10 @@
-import os
-from pathlib import Path
-from utils.commands import run_command
 from .base_handler import BaseHandler
-from rich.panel import Panel
 from jinja2 import Template
+from pathlib import Path
+from rich.panel import Panel
+from utils.helpers import Project, run_command
 import logging
-from utils.helpers import Project
+import os
 
 
 class BackendSetupHandler(BaseHandler):

@@ -4,6 +4,7 @@ import subprocess
 import sys
 from rich.panel import Panel
 
+
 class EnvCheckHandler(BaseHandler):
     def __init__(self, console):
         super().__init__()

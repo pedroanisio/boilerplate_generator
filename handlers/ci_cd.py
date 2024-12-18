@@ -1,8 +1,8 @@
-import logging
-from pathlib import Path
-from jinja2 import Template
 from .base_handler import BaseHandler
+from jinja2 import Template
+from pathlib import Path
 from rich.panel import Panel
+import logging
 
 
 class CiCdSetupHandler(BaseHandler):

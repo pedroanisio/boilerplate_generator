@@ -1,15 +1,16 @@
 ## path : ./handlers/planning.py
 from .base_handler import BaseHandler
+from dotenv import load_dotenv
+from llm.ai_manager import AIManager
+from openai import OpenAI
 from pathlib import Path
-from rich.prompt import Prompt
 from rich.panel import Panel
+from rich.prompt import Prompt
 from utils.openai import OpenAIEngine
 from utils.prompt_utils import PromptUtils
-from llm.ai_manager import AIManager
-from dotenv import load_dotenv
-import os
 import logging
-from openai import OpenAI
+import os
+
 # Load environment variables
 load_dotenv()
 

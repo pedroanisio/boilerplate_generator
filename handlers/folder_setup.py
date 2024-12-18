@@ -1,7 +1,8 @@
 from .base_handler import BaseHandler
 from pathlib import Path
 from rich.panel import Panel
-import re
+from utils.helpers import to_snake_case
+
 
 class FolderSetupHandler(BaseHandler):
     def __init__(self, console):
@@ -21,7 +22,7 @@ class FolderSetupHandler(BaseHandler):
             raise ValueError(f"Missing required context keys: {', '.join(missing_keys)}")
 
         # Convert project_name to snake_case
-        project_name = re.sub(r'(?<!^)(?=[A-Z])', '_', context["project_name"]).lower()
+        project_name = to_snake_case(context["project_name"])
 
         # Convert project_root to a Path object
         project_root = Path(context["project_root"])
