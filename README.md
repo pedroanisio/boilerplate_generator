@@ -30,7 +30,7 @@ Run the script in a Unix-like environment for compatibility.
 3. Run the script:
 
     ```bash
-    python boilerplate_generator.py
+    python main.py
     ```
 
 4. Follow the prompts to provide project details like name, goals, architecture, and non-functional requirements.
