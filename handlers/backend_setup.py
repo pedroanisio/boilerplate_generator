@@ -81,7 +81,7 @@ class BackendSetupHandler(BaseHandler):
         # Render templates for .env files and Django settings
         self._render_and_write_template("env.j2", backend_path / ".env", {
             "debug": True,
-            "allowed_hosts": context["secret_key"],
+            "allowed_hosts": context["allowed_hosts"],
             "secret_key": context["secret_key"],
             "db_url": f"postgres://{context['db_user']}:{context['db_password']}@db:5432/{context['db_name']}",
         })
@@ -97,7 +97,7 @@ class BackendSetupHandler(BaseHandler):
             "secret_key": context["secret_key"],
             "db_url": f"postgres://{context['db_user']}:{context['db_password']}@db:5432/{context['db_name']}",
         })
-        self._render_and_write_template("settings.py.j2", backend_path / "app" / "settings.py", context)
+        self._render_and_write_template("settings.py.j2", backend_path / "app" / "settings.py", context, append=True)
 
         # Initialize Alembic for migrations
         run_command("alembic init migrations", "Initialize Alembic migrations", cwd=backend_path)
@@ -110,19 +110,42 @@ class BackendSetupHandler(BaseHandler):
         self.console.print("\n[bold yellow]Add the following line to your /etc/hosts file for testing:[/bold yellow]")
         self.console.print(f"127.0.0.1    {context['project_name'].lower()}-{context['db_name']}.stage.internal")
 
-    def _render_and_write_template(self, template_name, output_path, context):
+    def _render_and_write_template(self, template_name, output_path, context, append=False):
         """
-        Render a Jinja2 template and write it to a file.
+        Render a Jinja2 template and either append to or overwrite the target file.
         """
         template_path = self.template_dir / template_name
         if not template_path.exists():
             raise FileNotFoundError(f"Template '{template_path}' not found.")
 
+        # Render the template
         with open(template_path, "r") as template_file:
             template = Template(template_file.read())
-            content = template.render(context)
+            rendered_content = template.render(context)
 
-        self._write_file(output_path, content)
+        # Append or overwrite based on the `append` flag
+        if append:
+            self._append_to_file(output_path, rendered_content)
+        else:
+            self._write_file(output_path, rendered_content)
+
+    def _append_to_file(self, path, content):
+        """
+        Utility to append content to a file.
+        """
+        path.parent.mkdir(parents=True, exist_ok=True)  # Ensure directory exists
+        mode = "a" if path.exists() else "w"  # Append if file exists, otherwise write
+        with open(path, mode) as f:
+            f.write("\n" + content + "\n")  # Append with a newline for separation
+
+    def _write_file(self, path, content):
+        """
+        Utility to overwrite content in a file.
+        """
+        path.parent.mkdir(parents=True, exist_ok=True)  # Ensure directory exists
+        with open(path, "w") as f:
+            f.write(content)
+
 
     @staticmethod
     def _write_file(path, content):
