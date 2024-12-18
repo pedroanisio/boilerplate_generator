@@ -24,7 +24,7 @@ class DockerConfigurationHandler(BaseHandler):
 
         # Ensure required context values and gather missing data
         required_keys = ["project_name", "project_dir", "python_image", "node_image"]
-        optional_keys = ["secret_key", "allowed_hosts", "db_user", "db_password"]
+        optional_keys = ["secret_key", "allowed_hosts", "db_name", "db_user", "db_password"]
         missing_keys = [key for key in required_keys if key not in context]
 
         if missing_keys:
@@ -68,6 +68,7 @@ class DockerConfigurationHandler(BaseHandler):
             allowed_hosts=context["allowed_hosts"],
             db_user=context["db_user"],
             db_password=context["db_password"],
+            db_name=context["db_name"],
         )
 
         # Write rendered files
