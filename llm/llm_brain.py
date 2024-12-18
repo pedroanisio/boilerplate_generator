@@ -1,4 +1,10 @@
 import logging
+import os
+from openai import OpenAI
+import os
+from dotenv import load_dotenv
+# Load environment variables
+load_dotenv()
 
 class LLMBrain:
     """
@@ -9,3 +15,14 @@ class LLMBrain:
         self.model_type = model_type
         self.temperature = temperature
         self.max_tokens = max_tokens
+        # Initialize the OpenAI client
+        try:
+            api_key = os.getenv("OPENAI_API_KEY")  # Load API key from .env file
+            if not api_key:
+                raise ValueError("OPENAI_API_KEY not set in environment variables")
+            client = OpenAI(api_key=api_key)
+            logging.info("OpenAI client initialized successfully")
+            self.client = client
+        except Exception as e:
+            logging.critical(f"Failed to initialize OpenAI client: {e}")
+            exit(1)

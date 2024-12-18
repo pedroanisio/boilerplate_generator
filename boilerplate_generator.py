@@ -2,7 +2,40 @@ import os
 import subprocess
 from pathlib import Path
 import sys
-from helper import Project
+from pathlib import Path
+from rich.prompt import Prompt
+from rich.console import Console
+from rich.panel import Panel
+import os
+
+# Initialize Rich console
+console = Console()
+
+def refine_input_with_openai(prompt_text, user_input):
+    """Use OpenAI to refine the user's input."""
+    # Simulate refinement with OpenAI (replace this with actual API call)
+    refined_input = f"[Refined] {user_input.strip()}"
+    return refined_input
+
+def get_and_refine_input(prompt_text, default_value):
+    """Prompt the user for input with a default value and refine it using OpenAI."""
+    user_input = Prompt.ask(prompt_text, default=default_value)
+    
+    console.print("\n[bold yellow]Refining your input...[/bold yellow]")
+    refined_input = refine_input_with_openai(prompt_text, user_input)
+    console.print(f"\nSuggested refinement: [green]{refined_input}[/green]")
+    
+    confirmation = Prompt.ask("Do you want to use this refinement?", choices=["yes", "no"], default="yes")
+    return refined_input if confirmation == "yes" else user_input
+
+
+from utils.helper import Project
+
+class FolderInfo:
+    def __init__(self, name, parent=None):
+        self.script_dir = Path(__file__).resolve().parent
+        self.root_dir = self.script_dir.parent
+
 
 def check_dependency(tool):
     """Check if a required tool is installed."""
@@ -32,32 +65,47 @@ def run_command(command, description):
 
 
 def prompt_project_details():
-    """Prompt the user for project planning details."""
-    print("Enter project details for planning:")
-    project_name = input("Project name: ").strip()
-    project_goals = input("Project goals: ").strip()
-    architecture = input("High-level architecture description: ").strip()
-    non_functional_requirements = input(
-        "Non-functional requirements (scalability, performance, etc.): "
-    ).strip()
+    """Prompt the user for project planning details with default answers."""
+    console.print(Panel("[bold cyan]Enter project details for planning[/bold cyan]\nPress Enter to accept default values."))
 
+    # Default values
+    default_root_path = Path(os.getcwd())  # Default to current working directory
+    default_name = "My Project"
+    default_goals = "Create a scalable and efficient project solution."
+    default_architecture = "Microservices architecture with containerized deployments."
+    default_nfr = "High scalability, performance, and security standards."
+
+    # Collect inputs
+    root_path = Prompt.ask("Project root path", default=str(default_root_path))
+    root_path = Path(root_path).resolve()  # Ensure the path is absolute and normalized
+    project_name = get_and_refine_input("Project name", default_name)
+    project_goals = get_and_refine_input("Project goals", default_goals)
+    architecture = get_and_refine_input("High-level architecture description", default_architecture)
+    non_functional_requirements = get_and_refine_input(
+        "Non-functional requirements (scalability, performance, etc.)", default_nfr
+    )
+
+    # Summary
     planning_content = f"""
 # Project Planning
 
+- **Root Path**: {root_path}
 - **Name**: {project_name}
 - **Goals**: {project_goals}
 - **Architecture**: {architecture}
 - **Non-functional Requirements**: {non_functional_requirements}
     """
-    print("\nProject Details Summary:")
-    print(planning_content)
+    console.print("\n[bold magenta]Project Details Summary:[/bold magenta]")
+    console.print(Panel(planning_content, title="Project Plan", subtitle="Review Details"))
 
-    confirm = input("Do you want to proceed with this setup? (yes/no): ").lower()
+    confirm = Prompt.ask("Do you want to proceed with this setup?", choices=["yes", "no"], default="yes")
     if confirm != "yes":
-        print("Setup aborted.")
+        console.print("[red]Setup aborted.[/red]")
         exit(0)
 
-    return project_name, planning_content
+    console.print("[bold green]Setup confirmed. Proceeding...[/bold green]")
+    return root_path, project_name, planning_content
+
 
 
 def create_project_structure(project_name, planning_content):
@@ -98,10 +146,21 @@ def initialize_git(project_name):
     run_command(f"cd {project_name} && git tag v0.1.0", "Create initial version tag")
 
 
+def create_path(*args):
+    path = Path()
+    for arg in args:
+        if isinstance(arg, str):
+            path = path / arg
+        elif isinstance(arg, Path):
+            path = path / arg
+        else:
+            raise ValueError("Invalid argument type. Must be a string or Path object.")
+    return path
+
 def setup_python_backend(project_name):
     """Set up the Python backend with Django and PostgreSQL."""
     # Create a Path object for the root project directory
-    root_path = Path(project_name)
+    root_path = create_path(project_name)
     root_path.mkdir(parents=True, exist_ok=True)  # Create if it doesn't exist
 
     # Create the backend directory
@@ -111,32 +170,28 @@ def setup_python_backend(project_name):
     # Now you can reliably use `root_path` and `backend_path` as Path objects
     # For example:
     # (backend_path / "some_file.txt").write_text("Hello, backend!")
-    
+
     # Generate project-specific details
     db_name = Project.generate_random_project_name()
     db_user = Project.generate_db_username()
     db_password = Project.generate_random_password()
 
-    staging_host = f"{project_name}-{db_name}.stage.internal"    
+    staging_host = f"{project_name}-{db_name}.stage.internal" 
 
-    run_command(f"cd {backend_path} && pipenv install django", "Install Django")
-    run_command(
-        f"cd {backend_path} && django-admin startproject app .", "Create Django project"
-    )
-    run_command(
-        f"cd {backend_path} && pipenv install pylint mypy pytest pytest-cov alembic psycopg2 dj-database-url",
-        "Install dev tools, migration tool, PostgreSQL adapter, and database URL utility",
-    )
-    run_command(
-        f"cd {backend_path} && pipenv lock > Pipfile.lock && pipenv requirements > requirements.txt",
-        "Generate requirements.txt",
-    )
-    run_command(
-        f"cd {backend_path} && pipenv lock > constraints.txt",
-        "Generate constraints.txt",
-    )
-    run_command(
-        f"cd {backend_path} && echo '[tool.black]\nline-length = 79' > pyproject.toml",
+    # Change directory to backend_path to simplify commands
+    os.makedirs(backend_path, exist_ok=True)
+    os.chdir(backend_path)
+
+    run_command("pipenv install django", "Install Django")
+    run_command("pipenv run django-admin startproject app .", "Create Django project named app")
+    run_command("pipenv install pylint mypy pytest pytest-cov alembic",
+                "Install Django, dev tools, migration tool and database URL utility")
+    run_command("pipenv install psycopg2-binary dj-database-url", "Install PostgreSQL adapter")
+    run_command("pipenv lock > Pipfile.lock && pipenv requirements > requirements.txt",
+                "Generate requirements.txt",
+                )
+    run_command("pipenv lock > constraints.txt", "Generate constraints.txt",)
+    run_command("echo '[tool.black]\nline-length = 79' > pyproject.toml",
         "Configure Black code formatter",
     )
 
@@ -146,15 +201,17 @@ ALLOWED_HOSTS=localhost,127.0.0.1
 SECRET_KEY={Project.generate_random_password()}
 DATABASE_URL=postgres://{db_user}:{db_password}@db:5432/{db_name}
 """
-    with open(f"{backend_path}/.env", "w") as f:
+    with open(".env", "w") as f:
         f.write(env_file_content)
-    with open(f"{backend_path}/.env.staging", "w") as f:
-      f.write(f"DEBUG=False\nALLOWED_HOSTS={staging_host}\nDATABASE_URL=postgres://{db_user}:{db_password}@db:5432/{db_name}")
-    with open(f"{backend_path}/.env.production", "w") as f:
+
+    with open(".env.staging", "w") as f:
+        f.write(f"DEBUG=False\nALLOWED_HOSTS={staging_host}\nDATABASE_URL=postgres://{db_user}:{db_password}@db:5432/{db_name}")
+
+    with open(".env.production", "w") as f:
         f.write(f"DEBUG=False\nALLOWED_HOSTS=domain.com\nDATABASE_URL=postgres://{db_user}:{db_password}@db:5432/{db_name}")
 
     # Update Django settings for PostgreSQL
-    settings_path = f"{backend_path}/app/settings.py"
+    settings_path = create_path(backend_path, "app", "settings.py")
     with open(settings_path, "r") as f:
         settings = f.read()
     
