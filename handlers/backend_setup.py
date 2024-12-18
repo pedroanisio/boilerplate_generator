@@ -87,7 +87,7 @@ class BackendSetupHandler(BaseHandler):
         })
         self._render_and_write_template("env.j2", backend_path / ".env.staging", {
             "debug": False,
-            "allowed_hosts": f"{project_name.lower()}-{context['db_name']}.stage.internal",
+            "allowed_hosts": f"{context['db_name']}.stage.internal",
             "secret_key": context["secret_key"],
             "db_url": f"postgres://{context['db_user']}:{context['db_password']}@db:5432/{context['db_name']}",
         })

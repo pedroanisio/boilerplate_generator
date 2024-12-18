@@ -18,6 +18,7 @@ class DocumentationSetupHandler(BaseHandler):
         """
         Add documentation templates for the project.
         """
+
         self.console.print(Panel("[bold cyan]Setting up documentation templates...[/bold cyan]"))
         logging.info("Starting documentation setup...")
 
@@ -28,10 +29,9 @@ class DocumentationSetupHandler(BaseHandler):
             logging.error(error_message)
             return error_message
 
-        project_name = context["project_name"]
-
         try:
-            self.setup_documentation(project_name)
+            self.setup_documentation(context)
+            project_name = context["project_name"]
             self.console.print(f"[bold green]Documentation templates added for {project_name}![/bold green]")
             logging.info("Documentation setup completed successfully.")
         except Exception as e:
@@ -42,11 +42,14 @@ class DocumentationSetupHandler(BaseHandler):
         # Pass to the next handler
         return None
 
-    def setup_documentation(self, project_name):
+    def setup_documentation(self, context):        
         """
         Core logic for setting up documentation using Jinja2 templates.
         """
-        docs_path = Path(project_name) / "docs"
+        project_name = context["project_name"]
+        project_dir = context["project_dir"]
+
+        docs_path = Path(project_dir) / "docs"
         docs_path.mkdir(parents=True, exist_ok=True)
 
         # Render and write templates for documentation

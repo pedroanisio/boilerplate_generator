@@ -6,6 +6,7 @@ from handlers.backend_setup import BackendSetupHandler
 from handlers.frontend_setup import FrontendSetupHandler
 from handlers.docker_setup import DockerConfigurationHandler
 from handlers.observability import ObservabilitySetupHandler
+from handlers.documentation import DocumentationSetupHandler
 from handlers.ci_cd import CiCdSetupHandler
 from utils.helpers import chain_handlers
 from rich.console import Console
@@ -55,6 +56,7 @@ def main():
         DockerConfigurationHandler(console),
         CiCdSetupHandler(console),
         ObservabilitySetupHandler(console),
+        DocumentationSetupHandler(console),
 
     ]
 

@@ -28,10 +28,9 @@ class ObservabilitySetupHandler(BaseHandler):
             logging.error(error_message)
             return error_message
 
-        project_name = context["project_name"]
-
         try:
-            self.setup_observability(project_name, context)
+            self.setup_observability(context)
+            project_name = context["project_name"]
             self.console.print(f"[bold green]Observability setup completed for {project_name}![/bold green]")
             logging.info("Observability setup completed successfully.")
         except Exception as e:
@@ -42,11 +41,12 @@ class ObservabilitySetupHandler(BaseHandler):
         # Pass to the next handler
         return None
 
-    def setup_observability(self, project_name, context):
+    def setup_observability(self,context):
         """
         Core logic for setting up observability using Jinja2 templates.
         """
-        observability_path = Path(project_name) / "infrastructure" / "observability"
+        project_dir = context["project_dir"]
+        observability_path = Path(project_dir) / "infrastructure" / "observability"
         observability_path.mkdir(parents=True, exist_ok=True)
 
         # Render the Prometheus configuration template

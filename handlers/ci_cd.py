@@ -48,7 +48,8 @@ class CiCdSetupHandler(BaseHandler):
         """
         Core logic for setting up GitHub Actions CI/CD using Jinja2 templates.
         """
-        github_actions_path = Path(project_name) / ".github" / "workflows"
+        project_dir = context["project_dir"]
+        github_actions_path = Path(project_dir) / ".github" / "workflows"
         github_actions_path.mkdir(parents=True, exist_ok=True)
 
         # Render the CI/CD pipeline template
