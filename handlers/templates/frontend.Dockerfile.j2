@@ -1,0 +1,5 @@
+FROM node:{{ node_version }}
+WORKDIR /app
+COPY frontend /app
+RUN yarn install
+CMD ["yarn", "start"]
