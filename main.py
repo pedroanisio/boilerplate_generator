@@ -21,10 +21,13 @@ def load_defaults_to_context(context):
     load_dotenv()  # Load .env file into environment variables
 
     # Extract relevant variables and set defaults if not provided
-    context["python_version"] = os.getenv("PYTHON_VERSION", "3.13.1-slim")
-    context["postgres_version"] = os.getenv("POSTGRES_VERSION", "13")
-    context["node_version"] = os.getenv("NODE_VERSION", "22.12.0-slim")
-    context["allowed_hosts"] = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1")
+    context["allowed_hosts"] = os.getenv("ALLOWED_HOSTS", "localhost")    
+    context["node_image"] = os.getenv("NODE_IMAGE", "22-slim")
+    context["node_version"] = os.getenv("NODE_VERSION", "22.12")
+    context["postgres_image"] = os.getenv("POSTGRES_IMAGE", "16")
+    context["postgres_version"] = os.getenv("POSTGRES_VERSION", "16")
+    context["python_image"] = os.getenv("PYTHON_IMAGE", "3.13-slim")
+    context["python_version"] = os.getenv("PYTHON_VERSION", "3.13.1")
 
     logging.info("Defaults loaded from .env and set in context.")
 
